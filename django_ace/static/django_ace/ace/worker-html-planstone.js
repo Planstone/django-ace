@@ -217,7 +217,7 @@ window.onmessage = function(e) {
 };
 })(this);
 
-define("ace/lib/oop",[], function(require, exports, module) {
+ace.define("ace/lib/oop",[], function(require, exports, module) {
 "use strict";
 
 exports.inherits = function(ctor, superCtor) {
@@ -245,7 +245,7 @@ exports.implement = function(proto, mixin) {
 
 });
 
-define("ace/lib/lang",[], function(require, exports, module) {
+ace.define("ace/lib/lang",[], function(require, exports, module) {
 "use strict";
 
 exports.last = function(a) {
@@ -433,7 +433,7 @@ exports.delayedCall = function(fcn, defaultTimeout) {
 };
 });
 
-define("ace/range",[], function(require, exports, module) {
+ace.define("ace/range",[], function(require, exports, module) {
 "use strict";
 var comparePoints = function(p1, p2) {
     return p1.row - p2.row || p1.column - p2.column;
@@ -672,7 +672,7 @@ Range.comparePoints = function(p1, p2) {
 exports.Range = Range;
 });
 
-define("ace/apply_delta",[], function(require, exports, module) {
+ace.define("ace/apply_delta",[], function(require, exports, module) {
 "use strict";
 
 function throwDeltaError(delta, errorText){
@@ -737,7 +737,7 @@ exports.applyDelta = function(docLines, delta, doNotValidate) {
 };
 });
 
-define("ace/lib/event_emitter",[], function(require, exports, module) {
+ace.define("ace/lib/event_emitter",[], function(require, exports, module) {
 "use strict";
 
 var EventEmitter = {};
@@ -787,8 +787,8 @@ EventEmitter._signal = function(eventName, e) {
 
 EventEmitter.once = function(eventName, callback) {
     var _self = this;
-    this.addEventListener(eventName, function newCallback() {
-        _self.removeEventListener(eventName, newCallback);
+    this.on(eventName, function newCallback() {
+        _self.off(eventName, newCallback);
         callback.apply(null, arguments);
     });
     if (!callback) {
@@ -860,14 +860,16 @@ EventEmitter.removeEventListener = function(eventName, callback) {
 };
 
 EventEmitter.removeAllListeners = function(eventName) {
-    if (this._eventRegistry) this._eventRegistry[eventName] = [];
+    if (!eventName) this._eventRegistry = this._defaultHandlers = undefined;
+    if (this._eventRegistry) this._eventRegistry[eventName] = undefined;
+    if (this._defaultHandlers) this._defaultHandlers[eventName] = undefined;
 };
 
 exports.EventEmitter = EventEmitter;
 
 });
 
-define("ace/anchor",[], function(require, exports, module) {
+ace.define("ace/anchor",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("./lib/oop");
@@ -960,7 +962,7 @@ var Anchor = exports.Anchor = function(doc, row, column) {
         });
     };
     this.detach = function() {
-        this.document.removeEventListener("change", this.$onChange);
+        this.document.off("change", this.$onChange);
     };
     this.attach = function(doc) {
         this.document = doc || this.document;
@@ -992,7 +994,7 @@ var Anchor = exports.Anchor = function(doc, row, column) {
 
 });
 
-define("ace/document",[], function(require, exports, module) {
+ace.define("ace/document",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("./lib/oop");
@@ -1292,6 +1294,16 @@ var Document = function(textOrLines) {
         }
     };
     
+    this.$safeApplyDelta = function(delta) {
+        var docLength = this.$lines.length;
+        if (
+            delta.action == "remove" && delta.start.row < docLength && delta.end.row < docLength
+            || delta.action == "insert" && delta.start.row <= docLength
+        ) {
+            this.applyDelta(delta);
+        }
+    };
+    
     this.$splitAndapplyLargeDelta = function(delta, MAX) {
         var lines = delta.lines;
         var l = lines.length - MAX + 1;
@@ -1314,7 +1326,7 @@ var Document = function(textOrLines) {
         this.applyDelta(delta, true);
     };
     this.revertDelta = function(delta) {
-        this.applyDelta({
+        this.$safeApplyDelta({
             start: this.clonePos(delta.start),
             end: this.clonePos(delta.end),
             action: (delta.action == "insert" ? "remove" : "insert"),
@@ -1347,7 +1359,7 @@ var Document = function(textOrLines) {
 exports.Document = Document;
 });
 
-define("ace/worker/mirror",[], function(require, exports, module) {
+ace.define("ace/worker/mirror",[], function(require, exports, module) {
 "use strict";
 
 var Range = require("../range").Range;
@@ -1409,7 +1421,7 @@ var Mirror = exports.Mirror = function(sender) {
 
 });
 
-define("ace/mode/html/saxparser",[], function(require, exports, module) {
+ace.define("ace/mode/html/saxparser",[], function(require, exports, module) {
 module.exports = (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({
 1:[function(_dereq_,module,exports){
 function isScopeMarker(node) {
@@ -10856,7 +10868,7 @@ module.exports=_dereq_(15)
 
 });
 
-define("ace/mode/html_worker",[], function(require, exports, module) {
+ace.define("ace/mode/html_worker",[], function(require, exports, module) {
 "use strict";
 
 var oop = require("../lib/oop");
@@ -10919,7 +10931,7 @@ oop.inherits(Worker, Mirror);
 
 });
 
-define("ace/lib/es5-shim",[], function(require, exports, module) {
+ace.define("ace/lib/es5-shim",[], function(require, exports, module) {
 
 function Empty() {}
 
